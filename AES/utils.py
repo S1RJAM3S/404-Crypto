@@ -3,3 +3,15 @@ def bytes2matrix(b: bytes) -> list[list[int]]:
 
 def matrix2bytes(m: list[list[int]]) -> bytes:
     return bytes([b for row in m for b in row])
+
+def GF_mult(a: int, b: int) -> int:
+    res = 0
+    for _ in range(8):
+        if b & 1:
+            res ^= a
+        overflow = a & 0x80
+        a <<= 1
+        if overflow:
+            a ^= 0x1B
+        b >>= 1
+    return res

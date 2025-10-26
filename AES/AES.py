@@ -1,4 +1,4 @@
-from utils import bytes2matrix, matrix2bytes
+from utils import bytes2matrix, matrix2bytes, GF_mult
 from enum import Enum
 
 SBOX_ENC = [
@@ -70,3 +70,21 @@ class AES:
         matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3] = matrix[3][1], matrix[3][2], matrix[3][3], matrix[3][0]
 
     def mix_columns(self, matrix: list[list[int]]) -> None:
+        temp = [0 for _ in range(4)]
+        for col in range(4):
+            temp[0] = GF_mult(0x02, matrix[0][col]) ^ GF_mult(0x03, matrix[1][col]) ^ matrix[2][col] ^ matrix[3][col]
+            temp[1] = matrix[0][col] ^ GF_mult(0x02, matrix[1][col]) ^ GF_mult(0x03, matrix[2][col]) ^ matrix[3][col]
+            temp[2] = matrix[0][col] ^ matrix[1][col] ^ GF_mult(0x02, matrix[2][col]) ^ GF_mult(0x03, matrix[3][col])
+            temp[3] = GF_mult(0x03, matrix[0][col]) ^ matrix[1][col] ^ matrix[2][col] ^ GF_mult(0x02, matrix[3][col])
+            for row in range(4):
+                matrix[row][col] = temp[row]
+
+    def inv_mix_columns(self, matrix: list[list[int]]) -> None:
+        temp = [0 for _ in range(4)]
+        for col in range(4):
+            temp[0] = GF_mult(0x0E, matrix[0][col]) ^ GF_mult(0x0B, matrix[1][col]) ^ GF_mult(0x0D, matrix[2][col]) ^ GF_mult(0x09, matrix[3][col])
+            temp[1] = GF_mult(0x09, matrix[0][col]) ^ GF_mult(0x0E, matrix[1][col]) ^ GF_mult(0x0B, matrix[2][col]) ^ GF_mult(0x0D, matrix[3][col])
+            temp[2] = GF_mult(0x0D, matrix[0][col]) ^ GF_mult(0x09, matrix[1][col]) ^ GF_mult(0x0E, matrix[2][col]) ^ GF_mult(0x0B, matrix[3][col])
+            temp[3] = GF_mult(0x0B, matrix[0][col]) ^ GF_mult(0x0D, matrix[1][col]) ^ GF_mult(0x09, matrix[2][col]) ^ GF_mult(0x0E, matrix[3][col])
+            for row in range(4):
+                matrix[row][col] = temp[row]
