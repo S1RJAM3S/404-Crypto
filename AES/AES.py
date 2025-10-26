@@ -55,6 +55,11 @@ class AES:
 
     def decrypt(self, ct: bytes) -> bytes:
         pass
+    
+    def add_round_key(self, matrix: list[list[int]], round_key: list[list[int]]) -> None:
+        for row in range(4):
+            for col in range(4):
+                matrix[row][col] ^= round_key[row][col]
 
     def sub_bytes(self, matrix: list[list[int]], sbox: list[list[int]]) -> None:
         matrix = [[sbox[val >> 4][val & 0x0F] for val in row] for row in matrix]
