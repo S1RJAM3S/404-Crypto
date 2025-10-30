@@ -1,4 +1,4 @@
-from utils import bytes2matrix, matrix2bytes, GF_mult
+from utils import bytes2matrix, matrix2bytes, bytes2word, xor_words, GF_mult
 from enum import Enum
 
 SBOX_ENC = [
@@ -39,6 +39,8 @@ SBOX_DEC = [
 [0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D]
 ]
 
+R_CON = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36]
+
 class Mode(Enum):
     ECB = 1
     CBC = 2
@@ -49,13 +51,35 @@ class AES:
         self.key: bytes = key
         self.mode: Mode = mode
         self.nonce: bytes | None = nonce
+        
+        self.Nk: int = len(self.key) // 4
+        self.Nr: int = self.Nk + 6
     
     def encrypt(self, pt: bytes) -> bytes:
         pass
 
     def decrypt(self, ct: bytes) -> bytes:
         pass
-    
+
+    def key_expansion(self) -> list[list[int]]:
+        w = [bytes2word(self.key[4*i:4*i+4]) for i in range(self.Nk)]
+        for i in range(self.Nk, 4*(self.Nr+1)):
+            temp = w[i-1]
+            if (i % self.Nk == 0):
+                self.rot_word(temp)
+                self.sub_word(temp)
+                temp[0] ^= R_CON[i//self.Nk - 1]
+            elif (self.Nk > 6 and i % self.Nk == 4):
+                self.sub_word(temp)
+            w.append(xor_words(temp, w[i - self.Nk]))
+        return w
+
+    def rot_word(self, word: list[int]) -> None:
+        word[0], word[1], word[2], word[3] = word[1], word[2], word[3], word[0]
+
+    def sub_word(self, word: list[int]) -> None:
+        word = [SBOX_ENC[val >> 4][val & 0x0F] for val in word]
+
     def add_round_key(self, matrix: list[list[int]], round_key: list[list[int]]) -> None:
         for row in range(4):
             for col in range(4):
