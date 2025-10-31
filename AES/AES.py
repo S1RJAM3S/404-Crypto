@@ -52,14 +52,40 @@ class AES:
         self.mode: Mode = mode
         self.nonce: bytes | None = nonce
         
+        self.w: list[list[int]] = self.key_expansion()
         self.Nk: int = len(self.key) // 4
         self.Nr: int = self.Nk + 6
     
     def encrypt(self, pt: bytes) -> bytes:
-        pass
+        state = bytes2matrix(pt)
+        
+        self.add_round_key(state, self.w[:self.Nk])
+        for round in range(1, self.Nr):
+            self.sub_bytes(state, SBOX_ENC)
+            self.shift_rows(state)
+            self.mix_columns(state)
+            self.add_round_key(state, self.w[round*self.Nk:(round+1)*self.Nk])
+        self.sub_bytes(state, SBOX_ENC)
+        self.shift_rows(state)
+        self.add_round_key(state, self.w[4*self.Nr:4*(self.Nr+1)])
+
+        return matrix2bytes(state)
 
     def decrypt(self, ct: bytes) -> bytes:
-        pass
+        state = bytes2matrix(ct)
+
+        self.add_round_key(state, self.w[4*self.Nr:4*(self.Nr+1)])
+        for round in range(self.Nr - 1, 0, -1):
+            self.inv_shift_rows(state)
+            self.sub_bytes(state, SBOX_DEC)
+            self.add_round_key(state, self.w[4*round:4*(round+1)])
+            self.inv_mix_columns(state)
+        self.inv_shift_rows(state)
+        self.sub_bytes(state, SBOX_DEC)
+        self.add_round_key(state, self.w[:self.Nk])
+
+        return matrix2bytes(state)
+
 
     def key_expansion(self) -> list[list[int]]:
         w = [bytes2word(self.key[4*i:4*i+4]) for i in range(self.Nk)]
